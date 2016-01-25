@@ -25,6 +25,8 @@ import org.jboss.arquillian.spring.integration.context.TestScopeApplicationConte
 import org.jboss.arquillian.test.spi.TestEnricher;
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.AnnotationConfigUtils;
+import org.springframework.context.support.StaticApplicationContext;
 
 import java.lang.reflect.Method;
 import java.util.logging.Logger;
@@ -94,9 +96,14 @@ public abstract class AbstractSpringInjectionEnricher<T extends TestScopeApplica
      * @param testCase           the test case for which the beans will be injected
      */
     private void injectDependencies(ApplicationContext applicationContext, Object testCase) {
+        // for applications that do not contain Annotation post processors, create new
+        // application context with those and create test class from that context
+        StaticApplicationContext staticContext = new StaticApplicationContext(applicationContext);
+        AnnotationConfigUtils.registerAnnotationConfigProcessors(staticContext);
+        staticContext.refresh();
 
         // retrieves the bean factory
-        AutowireCapableBeanFactory beanFactory = applicationContext.getAutowireCapableBeanFactory();
+        AutowireCapableBeanFactory beanFactory = staticContext.getAutowireCapableBeanFactory();
         // injects all the members
         beanFactory.autowireBeanProperties(testCase, AutowireCapableBeanFactory.AUTOWIRE_NO, false);
         // initialize the bean
